@@ -1,20 +1,22 @@
 const inquirer = require("inquirer");
+const mysql = require("mysql2");
 
-const db = mysql.createConnection(
-  {
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "movies_db",
-  },
-  console.log(`Connected to the movies_db database.`)
-);
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "employees_db",
+});
+db.connect((error) => {
+  if (error) throw error;
+  mainQuestions();
+});
 
 const mainQuestions = () => {
   inquirer
     .prompt([
       {
-        name: "initial choice",
+        name: "choices",
         type: "list",
         message: "What would you like to do?",
         choices: [
@@ -29,20 +31,21 @@ const mainQuestions = () => {
       },
     ])
     .then((answers) => {
-      const { choice } = answers;
-      if (choice == "View all deparatments") {
+      const { choices } = answers;
+      if (choices == "View all deparatments") {
         renderDept();
-      } else if (choice == "View all roles") {
+      } else if (choices == "View all roles") {
+        console.log("made it");
         renderRoles();
-      } else if (choice == "View all employees") {
+      } else if (choices == "View all employees") {
         renderEmployees();
-      } else if (choice == "Add department") {
+      } else if (choices == "Add department") {
         addDept();
-      } else if (choice == "Add role") {
-        //addRole()
-      } else if (choice == "Add employee") {
+      } else if (choices == "Add role") {
+        addRole();
+      } else if (choices == "Add employee") {
         //addEmployee()
-      } else if (choice == "Update employee role") {
+      } else if (choices == "Update employee role") {
         //updateEmployee()
       }
     });
@@ -55,7 +58,8 @@ const renderDept = () => {
 };
 const renderRoles = () => {
   db.query(
-    "SELECT role.r_id, role.title, role.salary, deparatment.name AS department FROM role INNER JOIN department ON role.department_id = department.d_id",
+    `SELECT roles.r_id, roles.title, roles.salary, department.name
+    FROM roles JOIN department ON roles.department_id = department.d_id`,
     function (err, result) {
       console.table(result);
       mainQuestions();
@@ -64,7 +68,18 @@ const renderRoles = () => {
 };
 const renderEmployees = () => {
   db.query(
-    "SELECT employee.id, employee.first_name, employee.last_name,role.title, role.salary, department.nameFROM employee, role, department WHERE department.d_id = role.department_id AND role.r_id = employees.role_id",
+    `SELECT employee.id, 
+    employee.first_name, 
+    employee.last_name, 
+    employee.manager_id, 
+    roles.title, 
+    roles.salary, 
+    department.name
+    FROM employee
+    JOIN roles ON roles.r_id = employee.role_id
+    JOIN department 
+    ON department.d_id = roles.department_id`,
+
     function (err, result) {
       console.table(result);
       mainQuestions();
@@ -81,16 +96,49 @@ const addDept = () => {
       },
     ])
     .then((response) => {
-      const newDepartment = [response.name];
-      console.table(newDepartment);
-      db.connect = () => {
-        if (err) throw err;
-        let insert = "INSERT INTO department (department_name) VALUES (?)";
-        db.query(insert, response.name, (err, result) => {
+      const { name } = response;
+      db.query(
+        `INSERT INTO department (name) VALUES (?)`,
+        name,
+        (err, result) => {
           if (err) throw err;
-          console.log("Department has been added");
+          console.log("New department added");
           mainQuestions();
-        });
-      };
+        }
+      );
+    });
+};
+const addRole = () => {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "title",
+        message: "What is the new roles name?",
+      },
+      {
+        type: "input",
+        name: "salary",
+        message: "What is the new roles salary?",
+      },
+      // {
+      //   type: "list",
+      //   name: "dept",
+      //   message: "What is the employee's department?",
+      //   choices: "SELECT department.name FROM department",
+      // },
+    ])
+    .then((response) => {
+      const { title, salary } = response;
+      console.log(title);
+      console.log(salary);
+      db.query(
+        `INSERT INTO roles (title, salary) VALUES (?, ?)`,
+        [title, salary],
+        (err, result) => {
+          if (err) throw bruh;
+          mainQuestions();
+        }
+      );
     });
 };
