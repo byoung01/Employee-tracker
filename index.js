@@ -20,7 +20,7 @@ const mainQuestions = () => {
         type: "list",
         message: "What would you like to do?",
         choices: [
-          "View all deparatments",
+          "View all departments",
           "View all roles",
           "View all employees",
           "Add department",
@@ -32,20 +32,19 @@ const mainQuestions = () => {
     ])
     .then((answers) => {
       const { choices } = answers;
-      if (choices == "View all deparatments") {
+      if (choices == "View all departments") {
         renderDept();
-      } else if (choices == "View all roles") {
-        console.log("made it");
+      } else if (choices === "View all roles") {
         renderRoles();
-      } else if (choices == "View all employees") {
+      } else if (choices === "View all employees") {
         renderEmployees();
-      } else if (choices == "Add department") {
+      } else if (choices === "Add department") {
         addDept();
-      } else if (choices == "Add role") {
+      } else if (choices === "Add role") {
         addRole();
-      } else if (choices == "Add employee") {
-        //addEmployee()
-      } else if (choices == "Update employee role") {
+      } else if (choices === "Add employee") {
+        addEmployee();
+      } else {
         //updateEmployee()
       }
     });
@@ -109,36 +108,106 @@ const addDept = () => {
     });
 };
 const addRole = () => {
-  inquirer
-    .prompt([
-      {
-        type: "input",
-        name: "title",
-        message: "What is the new roles name?",
-      },
-      {
-        type: "input",
-        name: "salary",
-        message: "What is the new roles salary?",
-      },
-      // {
-      //   type: "list",
-      //   name: "dept",
-      //   message: "What is the employee's department?",
-      //   choices: "SELECT department.name FROM department",
-      // },
-    ])
-    .then((response) => {
-      const { title, salary } = response;
-      console.log(title);
-      console.log(salary);
-      db.query(
-        `INSERT INTO roles (title, salary) VALUES (?, ?)`,
-        [title, salary],
-        (err, result) => {
-          if (err) throw bruh;
-          mainQuestions();
-        }
-      );
-    });
+  db.query("SELECT * FROM department", function (err, result) {
+    inquirer
+      .prompt([
+        {
+          type: "input",
+          name: "title",
+          message: "What is the new roles name?",
+        },
+        {
+          type: "input",
+          name: "salary",
+          message: "What is the new roles salary?",
+        },
+        {
+          type: "list",
+          name: "dept",
+          message: "What is the department?",
+          choices: result.map((item) => ({
+            name: item.name,
+            value: item.d_id,
+          })),
+        },
+      ])
+      .then((response) => {
+        const { title, salary, dept } = response;
+        db.query(
+          `INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)`,
+          [title, salary, dept],
+          (err, result) => {
+            if (err) throw err;
+            mainQuestions();
+          }
+        );
+      });
+  });
+};
+
+const addEmployee = () => {
+  db.query("SELECT * FROM roles", function (err, result) {
+    inquirer
+      .prompt([
+        {
+          type: "input",
+          name: "first",
+          message: "first name?",
+        },
+        {
+          type: "input",
+          name: "last",
+          message: "last name?",
+        },
+        {
+          type: "list",
+          name: "role",
+          message: "What is the employee's role?",
+          choices: result.map((item) => ({
+            name: item.title,
+            value: item.r_id,
+          })),
+        },
+      ])
+      .then((response) => {
+        const { first, last, role } = response;
+        db.query(
+          `INSERT INTO employee (last_name, first_name, role_id) VALUES (?, ?, ?)`,
+          [first, last, role],
+          mainQuestions(),
+          (err, result) => {
+            if (err) throw err;
+          }
+        );
+        // db.query("SELECT * FROM employee", function (err, result) {
+        //   console.log(result);
+        //   inquirer
+        //     .prompt([
+        //       {
+        //         type: "list",
+        //         name: "manager",
+        //         message: "Who is the employee's manager?",
+        //         choices: result.map((item) => ({
+        //           name: item.first_name,
+        //           value: item.manager_id,
+        //         })),
+        //       },
+        //     ])
+        //     .then((response) => {
+        //       console.log(response);
+        //       const { manager } = response;
+        //       console.log(manager);
+        //       db.query(
+        //         `INSERT INTO employee (manager_id) VALUES ( ?)`,
+        //         [manager],
+        //         (err, result) => {
+        //           if (err) throw err;
+        //           // mainQuestions();
+        //         }
+        //       );
+        //       console.log(response);
+        //     });
+        // });
+      });
+  });
 };
