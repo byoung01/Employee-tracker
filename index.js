@@ -172,7 +172,7 @@ const addEmployee = () => {
       .then((response) => {
         const { first, last, role } = response;
         db.query(
-          `INSERT INTO employee (last_name, first_name, role_id) VALUES (?, ?, ?)`,
+          `INSERT INTO employee (first_name, last_name, role_id) VALUES (?, ?, ?)`,
           [first, last, role],
           mainQuestions(),
           (err, result) => {
